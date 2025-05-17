@@ -1,0 +1,90 @@
+import carrera.*
+import materia.*
+import criterio.*
+import estudiante.*
+import estrategia.*
+
+describe "Testeo de inscripciones" {
+
+  const programacion = new Carrera(nombre = "Programacion")
+  const medicina = new Carrera(nombre = "Medicina")
+
+  const elepr = new Materia(nombre = "Elementos de programacion", cupo = 50, carrera = programacion, requisitos = #{},criterio = porCorrelativas,estrategia = ordenada,año = 1, creditosOtorgados = 10, creditosNecesarios = 0)
+  const mate1 = new Materia(nombre = "Matematica 1", cupo = 50, carrera = programacion, requisitos = #{},criterio = porCorrelativas,estrategia = ordenada,año = 1,creditosOtorgados = 10, creditosNecesarios = 0)
+  const bbdd = new Materia(nombre = "Bases de datos", cupo = 50, carrera = programacion, requisitos = #{},criterio = porCorrelativas,estrategia = ordenada,año = 1,creditosOtorgados = 10, creditosNecesarios = 0)
+  const obj1 = new Materia(nombre = "Objetos 1", cupo = 50, carrera = programacion, requisitos = #{},criterio = porCorrelativas,estrategia = ordenada,año = 1,creditosOtorgados = 10, creditosNecesarios = 0)
+  const obj2 = new Materia(nombre = "Objetos 2", cupo = 3, carrera = programacion, requisitos = #{obj1, mate1},criterio = porCorrelativas,estrategia = ordenada,año = 2,creditosOtorgados = 10, creditosNecesarios = 0)
+  const obj3 = new Materia(nombre = "Objetos 3", cupo = 50, carrera = programacion, requisitos = #{obj2, bbdd},criterio = porCorrelativas,estrategia = ordenada,año = 3,creditosOtorgados = 10, creditosNecesarios = 0)
+  const conc = new Materia(nombre = "Programacion Concurrente", cupo = 50, carrera = programacion, requisitos = #{obj1, bbdd},criterio = porCorrelativas,estrategia = ordenada,año = 2,creditosOtorgados = 10, creditosNecesarios = 0)
+  const qui = new Materia(nombre = "Quimica", cupo = 50, carrera = medicina, requisitos = #{},criterio = porCorrelativas,estrategia = ordenada,año = 1,creditosOtorgados = 10, creditosNecesarios = 0)
+  const bio1 = new Materia(nombre = "Biologia 1", cupo = 50, carrera = medicina, requisitos = #{},criterio = porCorrelativas,estrategia = ordenada,año = 1,creditosOtorgados = 10, creditosNecesarios = 0)
+  const bio2 = new Materia(nombre = "Biologia 2", cupo = 50, carrera = medicina, requisitos = #{bio1},criterio = porCorrelativas,estrategia = ordenada,año = 2,creditosOtorgados = 10, creditosNecesarios = 0)
+
+  const roque = new Estudiante(nombre = "Roque", carreras = #{programacion, medicina})
+  const luisa = new Estudiante(nombre = "Luisa", carreras = #{programacion})
+  const romina = new Estudiante(nombre = "Romina", carreras = #{programacion})
+  const alicia = new Estudiante(nombre = "Alicia", carreras = #{programacion})
+  const ana = new Estudiante(nombre = "Ana", carreras = #{programacion})
+
+  method initialize(){
+    programacion.agregarMaterias(#{elepr,mate1,bbdd,obj1,obj2,obj3,conc})
+    medicina.agregarMaterias(#{qui, bio1, bio2})
+
+    roque.registrarAprobada(elepr, 8)
+    roque.registrarAprobada(mate1, 9)
+    roque.registrarAprobada(bbdd, 9)
+    roque.registrarAprobada(obj1, 8)
+    roque.registrarAprobada(qui, 7)
+    roque.registrarAprobada(bio1, 10)
+
+    luisa.registrarAprobada(elepr, 8)
+    luisa.registrarAprobada(obj1, 9)
+    luisa.registrarAprobada(mate1, 8)
+
+    romina.registrarAprobada(elepr, 7)
+    romina.registrarAprobada(obj1, 10)
+    romina.registrarAprobada(mate1, 8)
+
+    alicia.registrarAprobada(elepr, 8)
+    alicia.registrarAprobada(obj1, 7)
+    alicia.registrarAprobada(mate1, 7)
+
+    ana.registrarAprobada(elepr, 9)
+  }
+
+  test "Roque puede inscribirse en Objetos 2, pero no en Objetos 3 (porque le falta Objetos 2) ni en Objetos 1 (porque ya la tiene aprobada)" {
+    assert.that(obj2.puedeInscribirse(roque))
+    assert.notThat(obj1.puedeInscribirse(roque))
+    assert.notThat(obj3.puedeInscribirse(roque))
+  }
+
+  test "Roque puede inscribirse: en Programación, en Objetos 2 y Programación Concurrente; en Medicina, en Biología 2." {
+    assert.that(obj2.puedeInscribirse(roque))
+    assert.that(bio2.puedeInscribirse(roque))
+    assert.that(conc.puedeInscribirse(roque))
+  }   
+
+  test "Si se inscriben, en este orden, Luisa, Romina, Alicia y Roque en Objetos 2, entonces las tres primeras quedan confirmadas, y Roque queda en lista de espera." {
+    obj2.inscribir(luisa)
+    obj2.inscribir(romina)
+    obj2.inscribir(alicia)
+    obj2.inscribir(roque)
+
+    assert.equals(#{luisa, romina, alicia}, obj2.inscriptos())
+    assert.that(obj2.enListaDeEspera(roque))
+  }
+
+  test "Si después se da de baja Romina en Objetos 2, entonces Roque pasa a tener la inscripción confirmada en esa materia" {
+    obj2.inscribir(luisa)
+    obj2.inscribir(romina)
+    obj2.inscribir(alicia)
+    obj2.inscribir(roque)
+    
+    obj2.darDeBaja(romina)
+
+    assert.equals(#{luisa, alicia, roque}, obj2.inscriptos())
+    assert.notThat(obj2.enListaDeEspera(roque))
+    assert.equals(#{}, obj2.listaDeEspera())
+  }
+}
+
